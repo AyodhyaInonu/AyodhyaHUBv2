@@ -292,89 +292,145 @@ espBtn.Parent = sections["Utilities"]
 teleportFrame.Parent = sections["Utilities"]
 profileFrame.Parent = sections["Profile"]
 
--- Setup
-local Player = game.Players.LocalPlayer
-local Char = Player.Character or Player.CharacterAdded:Wait()
-local HRP = Char:WaitForChild("HumanoidRootPart")
-local flying = false
-local bodyGyro, bodyVel
-local direction = Vector3.new()
+-- Noclip Button inside Utilities section
+local noclip = false
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
 
--- Create Utility Section Frame (or use existing one)
-local utilFrame = yourUtilitiesSectionFrame -- replace with your actual Utilities frame
+local noclipBtn = Instance.new("TextButton")
+noclipBtn.Size = UDim2.new(0, 180, 0, 30)
+noclipBtn.Position = UDim2.new(0, 155, 0, 35)
+noclipBtn.Text = "Toggle Noclip"
+noclipBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+noclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+noclipBtn.Font = Enum.Font.SourceSansBold
+noclipBtn.TextSize = 16
+noclipBtn.Parent = sections["Utilities"]
+Instance.new("UICorner", noclipBtn)
 
--- Fly Toggle Button
+-- Noclip Toggle
+noclipBtn.MouseButton1Click:Connect(function()
+	noclip = not noclip
+	noclipBtn.Text = noclip and "Noclip: ON" or "Noclip: OFF"
+
+	if not noclip and character then
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true
+			end
+		end
+	end
+end)
+
+-- Apply Noclip effect each frame
+game:GetService("RunService").Stepped:Connect(function()
+	if noclip and character then
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+local uis = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = game.Players.LocalPlayer
+
+local flightOn = false
+local speedOn = false
+local bodyGyro, bodyVelocity
+local connection
+
+-- SPEED BOOST BUTTON
+local speedBtn = Instance.new("TextButton")
+speedBtn.Size = UDim2.new(0, 120, 0, 30)
+speedBtn.Position = UDim2.new(0, 155, 0, 75)
+speedBtn.Text = "Speed: OFF"
+speedBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBtn.Font = Enum.Font.SourceSansBold
+speedBtn.TextSize = 14
+speedBtn.Parent = sections["Utilities"]
+Instance.new("UICorner", speedBtn)
+
+speedBtn.MouseButton1Click:Connect(function()
+	speedOn = not speedOn
+	local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+	if hum then
+		hum.WalkSpeed = speedOn and 50 or 16
+	end
+	speedBtn.Text = "Speed: " .. (speedOn and "ON" or "OFF")
+end)
+
+-- FLIGHT MODE BUTTON
 local flyBtn = Instance.new("TextButton")
-flyBtn.Size = UDim2.new(0.3, 0, 0, 40)
-flyBtn.Position = UDim2.new(0.28, 0, 0.144, 0)
-flyBtn.Text = "Fly: OFF"
-flyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+flyBtn.Size = UDim2.new(0, 120, 0, 30)
+flyBtn.Position = UDim2.new(0, 155, 0, 115)
+flyBtn.Text = "Flight: OFF"
+flyBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 flyBtn.Font = Enum.Font.SourceSansBold
-flyBtn.TextSize = 18
+flyBtn.TextSize = 14
 flyBtn.Parent = sections["Utilities"]
 Instance.new("UICorner", flyBtn)
 
--- Fly Control Buttons
-local upBtn = Instance.new("TextButton")
-upBtn.Size = UDim2.new(0.3, 0, 0, 40)
-upBtn.Position = UDim2.new(0.05, 0, 0.2, 0)
-upBtn.Text = "Up"
-upBtn.BackgroundColor3 = Color3.fromRGB(40, 100, 200)
-upBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-upBtn.Font = Enum.Font.SourceSansBold
-upBtn.TextSize = 18
-upBtn.Visible = false
-upBtn.Parent = utilFrame
-Instance.new("UICorner", upBtn)
+flyBtn.MouseButton1Click:Connect(function()
+	flightOn = not flightOn
+	local char = LocalPlayer.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
 
-local downBtn = Instance.new("TextButton")
-downBtn.Size = UDim2.new(0.3, 0, 0, 40)
-downBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
-downBtn.Text = "Down"
-downBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 40)
-downBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-downBtn.Font = Enum.Font.SourceSansBold
-downBtn.TextSize = 18
-downBtn.Visible = false
-downBtn.Parent = utilFrame
-Instance.new("UICorner", downBtn)
-
--- Toggle Fly Function
-local function toggleFly()
-	flying = not flying
-	flyBtn.Text = flying and "Fly: ON" or "Fly: OFF"
-	upBtn.Visible = flying
-	downBtn.Visible = flying
-
-	if flying then
-		bodyGyro = Instance.new("BodyGyro", HRP)
-		bodyGyro.P = 9e4
+	if flightOn and root then
+		bodyGyro = Instance.new("BodyGyro", root)
 		bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-		bodyGyro.CFrame = HRP.CFrame
+		bodyGyro.P = 9e4
+		bodyGyro.CFrame = root.CFrame
 
-		bodyVel = Instance.new("BodyVelocity", HRP)
-		bodyVel.Velocity = Vector3.new(0, 0, 0)
-		bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+		bodyVelocity = Instance.new("BodyVelocity", root)
+		bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+		bodyVelocity.Velocity = Vector3.zero
 
-		game:GetService("RunService").RenderStepped:Connect(function()
-			if flying then
+		connection = RunService.RenderStepped:Connect(function()
+			if flightOn and root then
 				bodyGyro.CFrame = workspace.CurrentCamera.CFrame
-				bodyVel.Velocity = direction * 50
+				local direction = Vector3.zero
+				if uis:IsKeyDown(Enum.KeyCode.W) then
+					direction = workspace.CurrentCamera.CFrame.LookVector
+				elseif uis:IsKeyDown(Enum.KeyCode.S) then
+					direction = -workspace.CurrentCamera.CFrame.LookVector
+				elseif uis:IsKeyDown(Enum.KeyCode.Space) then
+					direction = Vector3.new(0, 1, 0)
+				elseif uis:IsKeyDown(Enum.KeyCode.LeftControl) then
+					direction = Vector3.new(0, -1, 0)
+				end
+				bodyVelocity.Velocity = direction * 50
 			end
 		end)
 	else
 		if bodyGyro then bodyGyro:Destroy() end
-		if bodyVel then bodyVel:Destroy() end
-		direction = Vector3.new()
+		if bodyVelocity then bodyVelocity:Destroy() end
+		if connection then connection:Disconnect() end
 	end
-end
-
--- Controls
-flyBtn.MouseButton1Click:Connect(toggleFly)
-upBtn.MouseButton1Click:Connect(function()
-	direction = Vector3.new(0, 1, 0)
+	flyBtn.Text = "Flight: " .. (flightOn and "ON" or "OFF")
 end)
-downBtn.MouseButton1Click:Connect(function()
-	direction = Vector3.new(0, -1, 0)
+
+local WallTP = Instance.new("TextButton")
+WallTP.Name = "WallTP"
+WallTP.Parent = sections["Utilities"]
+WallTP.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+WallTP.Position = UDim2.new(0, 155, 0, 155)
+WallTP.Size = UDim2.new(0, 120, 0, 30)
+WallTP.Font = Enum.Font.SourceSansBold
+WallTP.Text = "Wall Teleport"
+WallTP.TextColor3 = Color3.fromRGB(255, 255, 255)
+WallTP.TextSize = 14
+Instance.new("UICorner", WallTP)
+
+-- Functionality: Move player 10 studs forward
+WallTP.MouseButton1Click:Connect(function()
+	local character = game.Players.LocalPlayer.Character
+	if character and character:FindFirstChild("HumanoidRootPart") then
+		local hrp = character.HumanoidRootPart
+		hrp.CFrame = hrp.CFrame + hrp.CFrame.LookVector * 10
+	end
 end)
